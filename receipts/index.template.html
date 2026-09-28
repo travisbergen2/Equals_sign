@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room XI · The Equals Sign — an RH calculator</title>
+<meta name="description" content="An RH calculator: type a zero, an integer, a height, a point or a curve over F_p, press =, and read every representation the Fractal Youniverse instruments have built for it — the Bergen Disc dial, the live Hankel tower, Paper 14's A(m) windows — and what every RH-equivalent statement says about that input, each row labeled FREE, EQUIVALENT, MEASURED, DISPROVEN or PROVEN WORLD. 10,000 zeros, recomputed in your browser, self-checked against a Python twin.">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f12;--panel:#14171c;--line:#252a33;--ink:#e8e4da;--dim:#9a968c;--amber:#f2b63c;--free:#7b8794;--eq:#f2b63c;--meas:#6fb3e0;--dis:#e0645a;--prov:#6fd08c;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;--sans:'IBM Plex Sans',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45}
+header{padding:28px 24px 10px;max-width:1180px;margin:0 auto}
+.room{font-family:var(--mono);color:var(--amber);letter-spacing:.12em;font-size:12px;text-transform:uppercase}
+h1{margin:6px 0 4px;font-size:clamp(26px,4vw,40px);font-weight:600}
+h1 .eq{color:var(--amber)}
+.lede{color:var(--dim);max-width:78ch;margin:0}
+.console{max-width:1180px;margin:14px auto 0;padding:0 24px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chip{font-family:var(--mono);font-size:12px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:var(--dim);cursor:pointer;background:var(--panel)}
+.chip.on{border-color:var(--amber);color:var(--amber)}
+.inrow{display:flex;gap:10px}
+#q{flex:1;font-family:var(--mono);font-size:20px;padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;min-width:0}
+#eq{font-family:var(--mono);font-size:28px;font-weight:600;padding:0 26px;border-radius:8px;border:1px solid var(--amber);background:var(--amber);color:#1a1405;cursor:pointer}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.preset{font-family:var(--mono);font-size:12px;padding:5px 9px;border:1px dashed var(--line);border-radius:6px;color:var(--dim);cursor:pointer;background:transparent}
+.preset.traitor{border-color:var(--dis);color:var(--dis)}
+.aux{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.aux label{display:flex;align-items:center;gap:6px}
+.aux input{width:9.5em;font-family:var(--mono);font-size:12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+.banner{margin-top:12px;padding:10px 14px;border:1px solid var(--dis);border-radius:8px;color:var(--dis);font-size:14px;display:none}
+.banner.on{display:block}
+main.grid{max-width:1180px;margin:18px auto 0;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:860px){main.grid{grid-template-columns:1fr}}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-height:120px}
+.col h2{margin:0 0 10px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:var(--mono)}
+.wide{max-width:1180px;margin:18px auto 0;padding:0 24px}
+.wide .col{min-height:0}
+.row{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.row:first-of-type{border-top:0}
+.row .k{color:var(--dim)}
+.row .v{font-family:var(--mono);font-size:13px;word-break:break-word}
+.row .n{grid-column:1/-1;color:var(--dim);font-size:12.5px;margin-top:-2px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:2px 7px;border-radius:4px;margin-right:8px;vertical-align:middle;border:1px solid currentColor}
+.tag.FREE{color:var(--free)}.tag.EQUIVALENT{color:var(--eq)}.tag.MEASURED{color:var(--meas)}.tag.DISPROVEN{color:var(--dis)}.tag.PROVEN{color:var(--prov)}.tag.RH{color:#fff;border-color:#fff}
+.pos{color:var(--prov)}.neg{color:var(--dis)}.grey{color:var(--dim)}
+table.t{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;margin:6px 0}
+table.t th{color:var(--dim);font-weight:400;text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+table.t td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tw{overflow-x:auto}
+.cap{color:var(--dim);font-size:12.5px;margin:6px 0 0}
+canvas{display:block;max-width:100%;height:auto;background:#0a0c0f;border-radius:8px}
+.btn{font-family:var(--mono);font-size:12px;padding:6px 10px;border:1px solid var(--amber);border-radius:6px;color:var(--amber);background:transparent;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.door,.earned,.fence{max-width:1180px;margin:18px auto 0;padding:14px 24px}
+.door p,.fence p{color:var(--dim);margin:6px 0;font-size:14px;max-width:100ch}
+.earned{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.earned h3,.door h3,.fence h3{margin:0 0 8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-family:var(--mono)}
+.earned li{margin:8px 0;font-size:14px;max-width:110ch}
+.earned .val{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+#selfcheck{font-family:var(--mono);font-size:13px;margin-top:8px;cursor:pointer}
+#selfcheck.ok{color:var(--prov)}#selfcheck.bad{color:var(--dis)}
+#scdetail{font-family:var(--mono);font-size:11.5px;color:var(--dim);white-space:pre-wrap;display:none;margin-top:6px}
+footer{max-width:1180px;margin:10px auto 40px;padding:0 24px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+footer a,.fence a,.door a,.cap a{color:var(--amber);text-decoration:none}
+.small{font-size:12px;color:var(--dim)}
+.ov{text-decoration:overline}
+.hat{position:relative}.hat::after{content:"^";position:absolute;left:.12em;top:-.6em;font-size:.85em}
+</style>
+</head>
+<body>
+<header>
+  <div class="room">Room XI · The Equals Sign</div>
+  <h1>An RH calculator <span class="eq">=</span></h1>
+  <p class="lede">Type a zero, an integer, a height, a point <span style="font-family:var(--mono)">σ+it</span>, or a curve over <span style="font-family:var(--mono)">F<sub>p</sub></span>. Press <b>=</b>. The dictionary is every representation the instruments have built for that object; the board is what each RH-equivalent statement says about it, each row labeled by what it is. The dial is the Bergen Disc; the tower is the live Hankel test; the windows are Paper 14's A(m). Ten thousand zeros, everything recomputed in your browser and self-checked against the committed Python twin.</p>
+</header>
+
+<section class="console">
+  <div class="chips" id="chips">
+    <span class="chip on" data-m="auto">auto</span>
+    <span class="chip" data-m="zero">zero γ or #n</span>
+    <span class="chip" data-m="int">integer n</span>
+    <span class="chip" data-m="x">height x</span>
+    <span class="chip" data-m="s">point σ+it</span>
+    <span class="chip" data-m="curve">curve over F<sub>p</sub></span>
+  </div>
+  <div class="inrow"><input id="q" value="#1" autocomplete="off" spellcheck="false" aria-label="input"><button id="eq" title="compute">=</button></div>
+  <div class="presets" id="presets">
+    <span class="preset" data-m="zero" data-q="#1">ρ₁ = ½ + 14.1347i</span>
+    <span class="preset" data-m="zero" data-q="#10000">ρ₁₀₀₀₀</span>
+    <span class="preset" data-m="zero" data-q="#1" data-beta="0.6">ρ₁ displaced to β = 0.6</span>
+    <span class="preset" data-m="int" data-q="13">n = 13</span>
+    <span class="preset" data-m="int" data-q="5040">n = 5040</span>
+    <span class="preset" data-m="x" data-q="1000000">x = 10⁶</span>
+    <span class="preset" data-m="s" data-q="0.75+50i">s = 0.75 + 50i</span>
+    <span class="preset" data-m="s" data-q="0.5+100.5i">s = ½ + 100.5i</span>
+    <span class="preset" data-m="curve" data-q="p=1009 a=1 b=1">y² = x³ + x + 1 over F₁₀₀₉</span>
+    <span class="preset traitor" data-m="traitor" data-q="85.6993484853776">the traitor zero (Davenport–Heilbronn)</span>
+  </div>
+  <div class="aux">
+    <label>β (zero mode) <input id="beta" value="0.5"></label>
+    <label>Weil width a <input id="wa" value="0.1"></label>
+    <label>wave at x <input id="wx" value="1000"></label>
+    <label>Lagarias point s <input id="ls" value="0.75+50i"></label>
+    <label>series point s <input id="cs" value="0.75"></label>
+  </div>
+  <div class="banner" id="banner"></div>
+</section>
+
+<main class="grid">
+  <section class="col"><h2>The dial — Bergen Disc, z = 1 − 1/ρ</h2>
+    <canvas id="dial" width="440" height="440" aria-label="Bergen Disc dial"></canvas>
+    <canvas id="inset" width="440" height="110" aria-label="unrolled rim" style="margin-top:8px"></canvas>
+    <p class="cap" id="dialcap"></p>
+  </section>
+  <section class="col"><h2>The tower — live Hankel test (Two Spectral Fingerprints, Theorem 4.1)</h2><div id="hankel"></div></section>
+  <section class="col"><h2>Dictionary — the object in every representation</h2><div id="dict"></div></section>
+  <section class="col"><h2>The board — what each RH-equivalent says about this input</h2><div id="board"></div></section>
+</main>
+
+<section class="wide"><section class="col"><h2>The windows — Paper 14's A(m) = POLE(m) − PRIME(m) + ARCH(m), δ = 0.05</h2><div id="am"></div></section></section>
+
+<section class="door">
+  <h3>The ∀ door</h3>
+  <p>Every row above is computed for <em>this</em> input, exactly. RH is the statement that every EQUIVALENT row holds for <em>every</em> input. That quantifier — “every” — is the one key this calculator does not carry; it is the door, and every RH-equivalent parks it somewhere (the Infinity-Relocation Catalog, IMM Paper 22). FREE rows hold for any mirror-symmetric zero set and detect nothing; EQUIVALENT rows are theorems of the form “RH ⟺ …”, and they can fail — the traitor and the displaced-zero presets show them failing; MEASURED rows are descriptive; DISPROVEN rows are the strong forms history killed; PROVEN WORLD is the one place the door is open.</p>
+</section>
+
+<section class="earned">
+  <h3>RH and “proof” in one sentence — earned</h3>
+  <ol id="earned"></ol>
+</section>
+
+<section class="fence">
+  <h3>Fence and self-check</h3>
+  <p>Nothing on this page proves or disproves the Riemann Hypothesis. It computes finite instances of equivalent statements and displays each at its grade. Zero ordinates: Odlyzko's table, first 10,000 of 100,000 (9 decimals). Sieve cap 2·10⁶ for the counting functions; 3,445,000 for Paper 14's prime term. ζ(s) by Euler–Maclaurin (12 Bernoulli terms), log Γ by Lanczos; both verified against mpmath in the twin. Eigenvalues by cyclic Jacobi, whose relative accuracy on a positive matrix is bounded by κ(D<sup>−½</sup>HD<sup>−½</sup>)·ε (Demmel–Veselić 1992) — that bound is the certification floor printed next to every λ<sub>min</sub>. Citations flagged as from memory in the twin's comments: Lagarias 1999, Robin 1984, Hasse 1933, Schoenfeld 1976, Bays–Hudson 2000, Rubinstein–Sarnak 1994, Barnet-Lamb–Geraghty–Harris–Taylor 2011, Demmel–Veselić 1992. The traitor zero is a certified zero of the Davenport–Heilbronn function (winding number 1, 2026-09-11) — a function with a functional equation and real coefficients but no Euler product.</p>
+  <div id="selfcheck">self-check: running…</div>
+  <div id="scdetail"></div>
+  <p class="small">Twin: <span style="font-family:var(--mono)">receipts/rh_calculator_twin.py</span> writes the embedded reference values; <span style="font-family:var(--mono)">receipts/check_page_math.js</span> runs this same self-check under Node. Click the self-check line for the per-item list.</p>
+</section>
+
+<footer>Fractal Youniverse · Room XI · The Equals Sign · v0.2 · built 2026-09-28 · Travis Bergen (instruments) with Riemann (build) · <a href="https://fractalyouniverse.org/" target="_blank" rel="noopener noreferrer">all rooms</a> · <a href="https://doi.org/10.5281/zenodo.20684022" target="_blank" rel="noopener noreferrer">Paper 14</a></footer>
+
+<script id="embed" type="application/json">__EMBED_JSON__</script>
+<script>
+__RH_MATH_JS__
+</script>
+<script>
+'use strict';
+const EMB = JSON.parse(document.getElementById('embed').textContent);
+RH.setZeros(EMB.zeros);
+const ZEROS = RH.ZEROS, T = RH.T, REF = EMB.ref;
+const {C,cadd,csub,cmul,cdiv,cabs,carg,conj,cexp,cinv,cpowr,cpowint,cscale,TWO_PI,GAMMA_E,EPS} = RH;
+const DH = {beta: REF.dh_beta, gamma: REF.dh_gamma};
+const fmt=(x,d=6)=>{if(x===null||x===undefined||Number.isNaN(x))return '—';if(x===0)return '0';const a=Math.abs(x);return (a<1e-4||a>=1e9)?x.toExponential(d-1):x.toPrecision(d);};
+const fc=(z,d=6)=>`${fmt(z.re,d)} ${z.im<0?'−':'+'} ${fmt(Math.abs(z.im),d)}i`;
+const deg=r=>r*180/Math.PI;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let D=[],B=[];
+const drow=(k,v,n)=>D.push(`<div class="row"><div class="k">${k}</div><div class="v">${v}</div>${n?`<div class="n">${n}</div>`:''}</div>`);
+const brow=(tag,k,v,n)=>B.push(`<div class="row"><div class="k"><span class="tag ${tag}">${tag==='PROVEN'?'PROVEN WORLD':tag}</span>${k}</div><div class="v">${v}</div>${n?`<div class="n">${n}</div>`:''}</div>`);
+const sgn=x=>x>0?`<span class="pos">${fmt(x)} (&gt;0)</span>`:x<0?`<span class="neg">${fmt(x)} (&lt;0)</span>`:'0';
+function flush(){$('dict').innerHTML=D.join('')||'<div class="row"><div class="n">nothing to show</div></div>';$('board').innerHTML=B.join('');D=[];B=[];}
+function parseComplex(str){ str=str.replace(/\s+/g,'').replace(/−/g,'-'); if(/^[+-]?[\d.]+(e[+-]?\d+)?$/i.test(str)) return C(parseFloat(str),0);
+  const m=str.match(/^([+-]?[\d.]+(?:e[+-]?\d+)?)?([+-]?[\d.]*(?:e[+-]?\d+)?)i$/i); if(!m) return null;
+  const re=m[1]?parseFloat(m[1]):0; let imS=m[2]; if(imS===''||imS==='+') imS='1'; if(imS==='-') imS='-1'; return C(re,parseFloat(imS)); }
+
+// ------------------------------------------------------------------ the dial
+function drawDial(state){
+  const cv=$('dial'), ctx=cv.getContext('2d'); const W=cv.width, H=cv.height; const cx=W/2, cy=H/2, R=0.40*W;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#33455e'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx-R-14,cy); ctx.lineTo(cx+R+14,cy); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx,cy-R-14); ctx.lineTo(cx,cy+R+14); ctx.stroke();
+  ctx.strokeStyle='#f2b63c'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(cx,cy,R,0,TWO_PI); ctx.stroke();
+  // all zeros as rim ticks (pairs +/-theta): they crowd within 4.05 deg of z = 1
+  ctx.strokeStyle='rgba(242,182,60,0.10)'; ctx.lineWidth=1;
+  for(const g of ZEROS){ const th=RH.rimTheta(g); for(const sg of [1,-1]){ const x=cx+R*Math.cos(sg*th), y=cy-R*Math.sin(sg*th); ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(cx+(R+10)*Math.cos(sg*th), cy-(R+10)*Math.sin(sg*th)); ctx.stroke(); } }
+  ctx.fillStyle='#e8e4da'; ctx.beginPath(); ctx.arc(cx,cy,3.5,0,TWO_PI); ctx.fill();
+  ctx.font='12px IBM Plex Mono, monospace'; ctx.fillStyle='#9a968c'; ctx.fillText('z = 0 : pole s = 1', cx+8, cy-8); ctx.fillText('z = 1 : s = ∞', cx+R-108, cy+40); ctx.fillText('rim = critical line', cx-R+6, cy-R+16);
+  ctx.fillStyle='#e8e4da'; ctx.beginPath(); ctx.arc(cx+R,cy,3,0,TWO_PI); ctx.fill();
+  let K=1, cap='';
+  if(state){ const pts=state.points; const off=Math.max(...pts.map(p=>Math.abs(cabs(p.z)-1)));
+    if(off>1e-13) K=Math.min(Math.pow(10, Math.ceil(Math.log10(0.15/off))), 1e12);
+    for(const p of pts){ const r=1+K*(cabs(p.z)-1); const a=carg(p.z); const x=cx+R*r*Math.cos(a), y=cy-R*r*Math.sin(a);
+      ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(x,y,p.main?6:4,0,TWO_PI); ctx.fill(); if(p.label){ ctx.fillStyle=p.color; ctx.fillText(p.label, x+9, y-6); } }
+    if(state.theta!==undefined){ ctx.strokeStyle='rgba(242,182,60,0.9)'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(cx,cy,R+6,-state.theta,0); ctx.stroke(); }
+    cap=state.caption + (K>1?` Radial offset exaggerated ×${K.toExponential(0).replace('e+','e')} so the departure from the rim is visible; true |z|² − 1 = (1−2β)/|ρ|² = ${fmt(state.defect,4)}.`:` On the line the point sits exactly on the rim (|z| = 1).`); }
+  $('dialcap').innerHTML=cap;
+  // inset: unrolled rim, log scale in theta
+  const iv=$('inset'), ic=iv.getContext('2d'); const IW=iv.width, IH=iv.height; ic.clearRect(0,0,IW,IH);
+  const thMin=Math.log10(0.004), thMax=Math.log10(4.5); const X=t=>20+(IW-40)*(Math.log10(t)-thMin)/(thMax-thMin);
+  ic.strokeStyle='#33455e'; ic.beginPath(); ic.moveTo(20,IH-30); ic.lineTo(IW-20,IH-30); ic.stroke();
+  ic.strokeStyle='rgba(242,182,60,0.22)'; for(const g of ZEROS){ const t=deg(RH.rimTheta(g)); const x=X(t); ic.beginPath(); ic.moveTo(x,IH-30); ic.lineTo(x,IH-62); ic.stroke(); }
+  ic.fillStyle='#9a968c'; ic.font='11px IBM Plex Mono, monospace'; for(const t of [0.005,0.01,0.05,0.1,0.5,1,4.05]){ const x=X(t); ic.fillText(String(t)+'°', x-10, IH-12); ic.strokeStyle='#33455e'; ic.beginPath(); ic.moveTo(x,IH-30); ic.lineTo(x,IH-26); ic.stroke(); }
+  ic.fillText('rim angle θ = 2·arctan(1/2γ), all 10,000 zeros, log scale — density ∝ 1/γ', 20, 14);
+  if(state&&state.theta!==undefined){ const t=deg(Math.abs(state.theta)); if(t>=0.004&&t<=4.5){ const x=X(t); ic.strokeStyle='#e0645a'; ic.lineWidth=2; ic.beginPath(); ic.moveTo(x,IH-30); ic.lineTo(x,IH-75); ic.stroke(); ic.fillStyle='#e0645a'; ic.fillText(`θ = ${fmt(t,5)}°`, Math.min(x+6,IW-120), IH-80); ic.lineWidth=1; } }
+}
+
+// ------------------------------------------------------------------ the tower (live Hankel)
+const HANKEL_EXACT = REF.hankel_lmin_exact_k1_7;
+function renderHankel(plant, note){
+  const q=RH.hankelQ(19, plant); const rows=RH.hankelReport(q, 10);
+  let h=`<div class="cap">q<sub>m</sub> = Σ<sub>γ>0</sub> γ<sup>−2(m+1)</sup> over the 10,000 tabulated zeros plus the Riemann–von Mangoldt tail; H<sub>k</sub> = [q<sub>i+j</sub>]; RH ⟺ H<sub>k</sub> positive semidefinite for every k (Theorem 4.1, pole matching). Eigenvalues by Jacobi; floor = κ(D<sup>−½</sup>H<sub>k</sub>D<sup>−½</sup>)·ε is the relative accuracy double precision can certify.${note?' <b>'+note+'</b>':''}</div>`;
+  h+='<div class="tw"><table class="t"><tr><th>k</th><th>λ<sub>min</sub>(H<sub>k</sub>) live</th><th>exact (Newton route)</th><th>rel. diff</th><th>κε floor</th><th>corr-normalized λ<sub>min</sub></th><th>status</th></tr>';
+  let kstar=null;
+  for(const r of rows){ const ex=(!plant&&r.k<=7)?HANKEL_EXACT[r.k-1]:null; const rd=ex?Math.abs(r.lamMin/ex-1):null;
+    let status; if(r.lamMin<0&&r.relFloor<1e-2){ status='<span class="neg">NEGATIVE — positivity fails</span>'; if(kstar===null) kstar=r.k; } else if(r.relFloor<1e-2) status='<span class="pos">certified positive</span>'; else status='<span class="grey">uncertified (double precision)</span>';
+    h+=`<tr><td>${r.k}</td><td class="${r.lamMin<0?'neg':''}">${fmt(r.lamMin,5)}</td><td>${ex?fmt(ex,5):'—'}</td><td>${rd!==null?rd.toExponential(1):'—'}</td><td>${r.relFloor.toExponential(1)}</td><td>${fmt(r.corrLamMin,4)}</td><td>${status}</td></tr>`; }
+  h+='</table></div>';
+  if(!plant) h+=`<p class="cap">All seven exact values are reproduced live to the printed relative differences; the exact tower is positive through k = 50 at 470 digits and k = 96 in certified ball arithmetic (TSF v4 §5.2; Paper 24). Past k ≈ 8 double precision loses the sign — yesterday's 200-digit comparison saw a spurious negative at k = 10 — which is why the floor column, not the sign column, is the certificate.</p>`;
+  else h+=`<p class="cap">${kstar?`First certified negative eigenvalue at <b>k* = ${kstar}</b>: the displaced zero's complex-conjugate pair of atoms destroys the moment-sequence structure. Paper 24's law k* ≈ 1.83·N(γ₀) + 5.4 with N(γ₀) true zeros below the plant.`:`No certified negative eigenvalue within double precision (k ≤ 10).`}</p>`;
+  $('hankel').innerHTML=h; return kstar;
+}
+
+// ------------------------------------------------------------------ the windows (Paper 14)
+const AM={delta:REF.A_delta, cutoff:REF.A_cutoff, M:300, built:null, mu:{}, Az:null};
+function ensureA(){ if(!AM.built){ AM.built=RH.buildA(AM.delta,AM.M,AM.cutoff); AM.Az=RH.aZetaSide(AM.delta,AM.M); } return AM.built; }
+function muWindow(W){ if(AM.mu[W]===undefined){ const t0=performance.now(); AM.mu[W]=RH.muMin(ensureA().A, Math.round(W/AM.delta)); AM.mu[W+'_ms']=performance.now()-t0; } return AM.mu[W]; }
+function renderAm(){
+  const {POLE,ARCH,PRIME,A}=ensureA(); const Az=AM.Az; const d=AM.delta;
+  const anchors=REF.A_mu_min_by_window; const paper={'2.5':1.34e-3,'5.0':1.85e-4,'7.5':6.4e-5,'10.0':4.4e-5,'12.5':3.1e-5,'15.0':2.2e-5};
+  let h=`<div class="cap">Definition (Paper 14, Def. 1 and eq. (2)–(5), box basis f<sub>j</sub> = 1<sub>[jδ,(j+1)δ)</sub>): POLE(m) = 2C<sub>δ</sub>cosh(mδ/2) with C<sub>δ</sub> = (8/δ)(cosh(δ/2) − 1); PRIME(m) = Σ<sub>n≥2</sub> Λ(n) n<sup>−½</sup> tent<sub>δ</sub>(ln n − mδ) over prime powers n ≤ ${AM.cutoff.toLocaleString()}; ARCH(m) = (1/π)∫<sub>0</sub><sup>∞</sup> B(r)[Re ψ(¼ + ir/2) − ln π] cos(mδr) dr, evaluated by the exact-series reduction of the E-HECKE-1 census (ψ(¼) = ${fmt(RH.PSI_QUARTER,10)}, ψ′(¼) = ${fmt(RH.PSI1_QUARTER,10)}). Weil's criterion in these coordinates: T<sub>M</sub> = [A(j−k)]<sub>j,k&lt;M</sub> positive semidefinite for every window M and every δ ⟺ RH (Prop. 1). Boundedness alone, A(m) = O(1), is already RH (Theorem 1, von Koch).</div>`;
+  h+='<div class="tw"><table class="t"><tr><th>window Mδ</th><th>M</th><th>μ<sub>min</sub>(T<sub>M</sub>) live</th><th>Paper 14 (N-14-1)</th><th>E-HECKE-1 recomputation</th><th>time</th></tr>';
+  for(const W of ['2.5','5.0','7.5','10.0','12.5','15.0']){ const live=AM.mu[W]; h+=`<tr><td>${W}</td><td>${Math.round(parseFloat(W)/d)}</td><td>${live!==undefined?`<span class="${live>0?'pos':'neg'}">${fmt(live,5)}</span>`:'<span class="grey">not computed</span>'}</td><td>${fmt(paper[W],3)}</td><td>${fmt(anchors[W],6)}</td><td>${AM.mu[W+'_ms']!==undefined?Math.round(AM.mu[W+'_ms'])+' ms':'—'}</td></tr>`; }
+  h+=`</table></div><p class="cap">All six of Paper 14's N-14-1 windows recomputed live from the prime side (no zero enters A(m)); the census column is the E-HECKE-1 recomputation of 2026-08-26 with the same construction.</p>`;
+  // explicit formula live
+  h+='<div class="tw"><table class="t"><tr><th>m</th><th>POLE</th><th>−PRIME</th><th>ARCH</th><th>A(m) arithmetic</th><th>Aζ(m) = Σ 2B(γ)cos(mδγ), 10,000 zeros</th><th>A − Aζ</th></tr>';
+  for(let m=0;m<8;m++) h+=`<tr><td>${m}</td><td>${fmt(POLE[m],6)}</td><td>${fmt(-PRIME[m],6)}</td><td>${fmt(ARCH[m],6)}</td><td>${fmt(A[m],7)}</td><td>${fmt(Az[m],7)}</td><td>${fmt(A[m]-Az[m],3)}</td></tr>`;
+  let mx=0,ss=0; for(let m=0;m<=AM.M;m++){ const e=Math.abs(A[m]-Az[m]); mx=Math.max(mx,e); ss+=e*e; }
+  h+=`</table></div><p class="cap">The explicit formula, live: the prime side and the zero side agree over 301 lags to max |A − Aζ| = ${fmt(mx,4)}, rms ${fmt(Math.sqrt(ss/(AM.M+1)),4)} with 10,000 zeros (Paper 14 reports 0.23 / 0.017 with its first 120). At lag 300, POLE = ${fmt(POLE[300],6)} and −PRIME = ${fmt(-PRIME[300],6)} cancel to three digits, leaving A(300) = ${fmt(A[300],4)} — the pure zero residue. The residual is the tail beyond γ<sub>10000</sub> = ${fmt(T,8)}.</p>`;
+  // ablations
+  const P60=RH.poleArray(d,60), R60=RH.archArrayZeta(d,60); const scaf=new Float64Array(61); for(let m=0;m<=60;m++) scaf[m]=P60[m]+R60[m];
+  const wp=RH.wallScan(P60,d,3), wa=RH.wallScan(R60,d,3), ws=RH.wallScan(scaf,d,3);
+  h+=`<div class="cap"><b>Ablations (E-WALL / E-HECKE-1 language).</b> First window where μ<sub>min</sub> &lt; 0: POLE alone <b>${wp.wall}</b> (= 2δ, trivial); ARCH<sub>ζ</sub> alone <b>${wa.wall}</b>; POLE + ARCH<sub>ζ</sub> scaffold, no primes <b>${ws.wall}</b> — the E-WALL value 0.80, an archimedean phenomenon with no prime content and no connection to ln 2 = 0.693 (E-HECKE-1: ARCH-DEFICIT-DRIVEN).</div>`;
+  const PR21=RH.primeArrayZeta(d,60,21);
+  h+='<div class="tw"><table class="t"><tr><th>window</th><th>M</th><th>μ<sub>min</sub>, no primes</th><th>primes n ≤ 21</th><th>all primes</th></tr>';
+  for(const Mi of [14,16,30,60]){ const np_=new Float64Array(61), wp_=new Float64Array(61); for(let m=0;m<=60;m++){ np_[m]=P60[m]+R60[m]; wp_[m]=P60[m]-PR21[m]+R60[m]; } const a=RH.muMin(np_,Mi), b=RH.muMin(wp_,Mi), c=RH.muMin(A,Mi); h+=`<tr><td>${(Mi*d).toFixed(2)}</td><td>${Mi}</td><td class="${a<0?'neg':'pos'}">${fmt(a,4)}</td><td class="${b<0?'neg':'pos'}">${fmt(b,4)}</td><td class="${c<0?'neg':'pos'}">${fmt(c,4)}</td></tr>`; }
+  h+='</table></div>';
+  // per-prime restoration
+  const s21=RH.byteSieve(21); const pps=[]; for(let p=2;p<=21;p++){ if(!s21[p]) continue; let n=p; while(n<=21){ pps.push([n,p]); n*=p; } } pps.sort((a,b)=>a[0]-b[0]); pps.push([23,23]);
+  const run=new Float64Array(61); const cells=[];
+  for(let i=0;i<pps.length-1;i++){ const [n,p]=pps[i]; const c=Math.log(p)/Math.sqrt(n); for(const [m,w] of RH.tentHits(n,d,60)) run[m]+=c*w; const arr=new Float64Array(61); for(let m=0;m<=60;m++) arr[m]=P60[m]-run[m]+R60[m]; const wall=RH.wallScan(arr,d,3).wall; cells.push(`${n} → wall ${wall===null?'none ≤ 3.0':wall.toFixed(2)} (ln ${pps[i+1][0]} = ${Math.log(pps[i+1][0]).toFixed(2)})`); }
+  h+=`<div class="cap"><b>The prime–pole bond, one prime power at a time</b> (prime powers entering in order; the wall moves to just past ln of the next missing one): ${cells.join('; ')}. Each prime, entering at weight Λ(p)/√p exactly when the window reaches ln p, restores positivity — Paper 14 §5.</div>`;
+  const Tv=3e12, Mcert=301; const bound=Mcert*(16/(d*Tv*Tv))*Math.cosh(Mcert*d/2);
+  h+=`<div class="row"><div class="k"><span class="tag EQUIVALENT">EQUIVALENT</span>T<sub>M</sub> positive semidefinite for every M, δ</div><div class="v">live μ<sub>min</sub>: ${['2.5','5.0','7.5'].map(W=>AM.mu[W]!==undefined?`${W}: ${fmt(AM.mu[W],4)}`:'').filter(Boolean).join(', ')}</div><div class="n">Weil positivity in box coordinates ⟺ RH (Paper 14 Prop. 1; Weil 1952) — the Toeplitz face of the moment problem (Herglotz), whose Hankel face is the tower above (Hamburger)</div></div>`;
+  h+=`<div class="row"><div class="k"><span class="tag EQUIVALENT">EQUIVALENT</span>A(m) = O(1)</div><div class="v">A(300) = ${fmt(A[300],5)} after POLE ${fmt(POLE[300],5)} − PRIME ${fmt(PRIME[300],5)}</div><div class="n">Theorem 1 (T-14-1): boundedness of A(m) ⟺ ψ(x) = x + O(√x ln²x) ⟺ RH (von Koch 1901) — boundedness is already the hypothesis</div></div>`;
+  h+=`<div class="row"><div class="k"><span class="tag MEASURED">MEASURED</span>P-14-1 conditional certificate</div><div class="v">off-line bound ≤ ${bound.toExponential(2)} at M = 301, T = 3·10¹²; observed μ<sub>min</sub>(15) = ${fmt(AM.mu['15.0']!==undefined?AM.mu['15.0']:anchors['15.0'],3)}; ratio ${fmt((AM.mu['15.0']!==undefined?AM.mu['15.0']:anchors['15.0'])/bound,3)}</div><div class="n">given zero verification to height T, any off-line zero perturbs the window-M form by at most M·(16/δT²)cosh(Mδ/2) — a certificate for this window, not a step toward all windows, which by Theorem 1 is RH</div></div>`;
+  $('am').innerHTML=h;
+}
+
+// ------------------------------------------------------------------ panels
+function orbitPoints(rho, traitor){ const m=csub(C(1),conj(rho)); const pts=[{z:csub(C(1),cinv(rho)),color:traitor?'#e0645a':'#f2b63c',main:true,label:'ρ'},{z:csub(C(1),cinv(conj(rho))),color:'#6fb3e0',label:'ρ̄'}];
+  if(Math.abs(rho.re-0.5)>1e-12){ pts.push({z:csub(C(1),cinv(m)),color:'#6fd08c',label:'1−ρ̄'},{z:csub(C(1),cinv(conj(m))),color:'#9a968c',label:'1−ρ'}); } return pts; }
+function panelZero(gamma, beta, idx, traitor){
+  const rho=C(beta,gamma), r2=beta*beta+gamma*gamma, w=cinv(rho), z=csub(C(1),w), delta=beta-0.5;
+  const a=parseFloat($('wa').value)||0.1, x=parseFloat($('wx').value)||1000, sL=parseComplex($('ls').value)||C(0.75,50);
+  const online=Math.abs(delta)<1e-12;
+  drow('the zero', `ρ = ${fc(rho,10)}` + (idx? ` &nbsp;(γ<sub>${idx}</sub> from the table)`:'') , traitor?`a certified zero of the Davenport–Heilbronn function — functional equation, real coefficients, no Euler product`:(idx?(online?'':'displaced off the line — a hypothetical'):'not a tabulated ordinate — treated as a hypothetical zero'));
+  drow('mirror orbit', online?`{ρ, <span class="ov">ρ</span>} — 2 points (ρ = 1 − <span class="ov">ρ</span> on the line)`:`{ρ, <span class="ov">ρ</span>, 1−ρ, 1−<span class="ov">ρ</span>} — 4 distinct points: ${fc(rho,6)}, ${fc(conj(rho),6)}, ${fc(csub(C(1),rho),6)}, ${fc(csub(C(1),conj(rho)),6)}`, 'the two mirrors s↦<span class="ov">s</span> and s↦1−<span class="ov">s</span> meet at 90°; orbits have size 4 off the line, 2 on it, never 3');
+  drow('bearing arg(ρ − ½)', `${fmt(deg(carg(C(delta,gamma))),8)}°`, '±90° exactly iff Re ρ = ½');
+  drow('modulus, index', `|ρ| = ${fmt(Math.sqrt(r2),10)} &nbsp; |ρ|² = ${fmt(r2,10)}` + (idx?` &nbsp; n = ${idx}`:''), idx?`Riemann–von Mangoldt main term N(γ) = ${fmt(RH.NMain(gamma),7)} → S(γ) ≈ ${fmt(idx-RH.NMain(gamma),4)}`:`N(γ) main term ${fmt(RH.NMain(gamma),7)}; tabulated zeros below this height: ${RH.countZerosLE(gamma)}`);
+  drow('reciprocal w = 1/ρ', `w = ${fc(w,8)} &nbsp; trace(w) = ${fmt(2*beta/r2,8)} &nbsp; norm(w) = ${fmt(1/r2,8)}`, `trace − norm = (2β−1)/|ρ|² = ${fmt((2*beta-1)/r2,6)}; &nbsp;|w−1|² − 1 = (1−2β)/|ρ|² = ${fmt((1-2*beta)/r2,6)} &nbsp;(the critical line is the circle |w−1| = 1)`);
+  drow('Bergen Disc z = 1 − 1/ρ', `|z| = ${fmt(cabs(z),10)} &nbsp; rim angle θ = ${fmt(deg(carg(z)),8)}°`, `|z|² − 1 = (1−2β)/|ρ|² = ${fmt(cabs(z)**2-1,6)}; on the line θ = 2 arctan(1/2γ) = ${fmt(deg(RH.rimTheta(gamma)),8)}°; rim compression |dθ/dγ| = 1/|ρ|² = ${fmt(1/r2,6)}`);
+  const liPair=[1,2,3,4,5].map(n=>2*(1-cpowint(z,n).re));
+  drow('Li share of the pair {ρ, <span class="ov">ρ</span>}', `n=1…5: ${liPair.map(v=>fmt(v,5)).join(', ')}`, online?`on the line this is 4 sin²(nθ/2) ≥ 0 — an identity`:`off the line: 2[1 − |z|ⁿ cos nθ]; the quadruple's share first turns negative at n = ${RH.firstNegativeLi(rho)??'> 6000'} (≈ 2π/arg z = ${fmt(TWO_PI/Math.abs(carg(z)),4)})`);
+  const lam=[1,2,3,4,5].map(RH.liLambda);
+  drow('Li coefficients λ₁…λ₅ (10,000 zeros + tail)', lam.map(v=>fmt(v,8)).join(', '), `exact λ₁ = 1 + γ<sub>E</sub>/2 − ½ ln 4π = ${fmt(REF.li_lambda1_exact,10)}; truncation residue ${fmt(lam[0]-REF.li_lambda1_exact,3)}`);
+  drow(`Weil leg, test width a = ${a}`, `angle a²γ(2β−1) = ${fmt(deg(a*a*gamma*(2*beta-1)),6)}° &nbsp; |leg| ∝ e<sup>a²(δ²−γ²)</sup>`, online?`angle 0: the leg is a genuine square |<span class="hat">f</span>(γ)|²`:`a violation δ at height γ is visible only for a > √(π/4δγ) = ${fmt(Math.sqrt(Math.PI/(4*Math.abs(delta)*gamma)),5)}`);
+  drow(`explicit-formula wave at x = ${x}`, `−2 Re(x<sup>ρ</sup>/ρ) = ${fmt(RH.efTerm(x,beta,gamma),8)}`, `amplitude 2x<sup>β</sup>/|ρ| = ${fmt(2*Math.pow(x,beta)/Math.sqrt(r2),6)}; period in ln x: 2π/γ = ${fmt(TWO_PI/gamma,6)}`);
+  const lc=cadd(cinv(csub(sL,rho)),cinv(csub(sL,conj(rho))));
+  drow(`Lagarias component at s = ${fc(sL,4)}`, `Re[1/(s−ρ) + 1/(s−<span class="ov">ρ</span>)] = ${sgn(lc.re)}`, `every on-line zero contributes Re > 0 when Re s > ½; an off-line zero with β > Re s contributes Re < 0`);
+  if(idx&&idx<ZEROS.length) drow('unfolded gap to the next zero', fmt((ZEROS[idx]-gamma)*Math.log(gamma/TWO_PI)/TWO_PI,6), 'mean 1 by construction; GUE Wigner surmise fits the 100,000-zero census (KS 0.019 vs Poisson 0.298)');
+  brow('EQUIVALENT','Re ρ = ½', online?'<span class="pos">holds for this zero</span>':`<span class="neg">fails: β − ½ = ${fmt(delta,6)}</span>`, 'RH itself, read on one zero; verified for every zero to height 3·10¹² (Platt–Trudgian 2021)');
+  brow('EQUIVALENT','reciprocal circle |1/ρ − 1| = 1', `|w−1|² − 1 = ${fmt(cabs(csub(w,C(1)))**2-1,6)}`, 'trace(w) = norm(w) ⟺ Re(1/w) = ½ ⟺ Re ρ = ½ — the same fixed circle in every imaginary quadratic world');
+  brow('EQUIVALENT','Disc rim |1 − 1/ρ| = 1', `|z| − 1 = ${fmt(cabs(z)-1,6)}`, 'Li’s map z = 1 − 1/ρ sends the critical line to the unit rim (Bombieri–Lagarias 1999: all zeros in the closed disc ⟺ λₙ ≥ 0 ∀n)');
+  const fn=online?null:RH.firstNegativeLi(rho);
+  brow('EQUIVALENT','Li: λₙ ≥ 0 for every n', online?'<span class="pos">this pair’s share 4 sin²(nθ/2) ≥ 0 for all n</span>':(fn?`<span class="neg">this quadruple’s share first negative at n = ${fn}</span>`:'<span class="pos">no negative share below n = 6000</span>'), 'Li 1997; Bombieri–Lagarias 1999 — a proven equivalence; the board row that can fail, and for the traitor it does');
+  brow('FREE','pair forced sign (2β−1)(1/|1−<span class="ov">ρ</span>|² − 1/|ρ|²) ≥ 0', sgn((2*beta-1)*(1/cabs(csub(C(1),conj(rho)))**2-1/r2)), 'an identity: ≥ 0 for every mirror pair, = 0 iff on the line — a sign forced ≥ 0 never forces = 0; it detects nothing alone');
+  brow('EQUIVALENT','Weil leg is a genuine square', online?'<span class="pos">leg angle 0</span>':`<span class="neg">leg angle ${fmt(deg(a*a*gamma*(2*beta-1)),5)}° at a = ${a}</span>`, 'face D of the explicit-formula triangle: Weil positivity for all test functions ⟺ RH (Weil 1952); Paper 14’s A(m) is this face in box coordinates — see the windows panel');
+  brow('EQUIVALENT','Lagarias: Re ξ′/ξ(s) > 0 for Re s > ½', `this zero’s component ${sgn(lc.re)} at s = ${fc(sL,4)}`, 'Lagarias 1999 (citation from memory) — the full sum over 10,000 zeros + tail is on the point panel');
+  brow('MEASURED','pair correlation / spacing', idx&&idx<ZEROS.length?`unfolded gap ${fmt((ZEROS[idx]-gamma)*Math.log(gamma/TWO_PI)/TWO_PI,5)}`:'—', 'Montgomery 1973: GUE pair correlation, conditional on RH — descriptive, not equivalent');
+  // tower + dial
+  let plant=null, hnote='';
+  if(traitor){ plant={g0:gamma,delta:delta,replace:false}; hnote=`Traitor added to the moment sums (its on-line partner does not exist): N(γ) = ${RH.countZerosLE(gamma)} true zeros lie below it, so the law puts its Hankel signature near k* ≈ ${fmt(1.83*RH.countZerosLE(gamma)+5.4,3)} — far past what double precision can certify; the Li row (n = 537) is the cheap detector for this zero.`; }
+  else if(!online&&idx){ plant={g0:gamma,delta:delta,replace:true}; hnote=`Zero #${idx} displaced to β = ${beta}: N(γ₀) = ${idx-1} true zeros below the plant, law k* ≈ ${fmt(1.83*(idx-1)+5.4,3)}.`; }
+  else if(!online){ plant={g0:gamma,delta:delta,replace:false}; hnote='Hypothetical off-line zero added to the moment sums.'; }
+  const kstar=renderHankel(plant, hnote);
+  if(kstar&&plant) brow('EQUIVALENT','Hankel: H<sub>k</sub> positive semidefinite for every k', `<span class="neg">first certified negative at k* = ${kstar}</span>`, 'TSF Theorem 4.1 — live in the tower panel');
+  else brow('EQUIVALENT','Hankel: H<sub>k</sub> positive semidefinite for every k', plant?'<span class="grey">no certified negative within double precision (k ≤ 10)</span>':'<span class="pos">all certified eigenvalues positive (k ≤ 7 live, k ≤ 96 in the record)</span>', 'TSF Theorem 4.1 — live in the tower panel');
+  drawDial({points:orbitPoints(rho,traitor), theta:carg(z), defect:cabs(z)**2-1, caption:`The Bergen Disc is Li's map z = 1 − 1/ρ: the pole s = 1 at the center, the critical line on the rim, s = ∞ at the vanishing point z = 1. Every one of the 10,000 tabulated zeros sits within θ₁ = 4.05° of that point (faint ticks); the highlighted arc is this zero's rim angle θ = ${fmt(deg(carg(z)),5)}°.`});
+  $('banner').className='banner'+(traitor?' on':''); $('banner').innerHTML=traitor?`<b>Traitor loaded.</b> ρ = ${fc(rho,12)} is a zero of the Davenport–Heilbronn function (certified by winding number, 2026-09-11). Its mirror 1 − <span class="ov">ρ</span> = ${fc(csub(C(1),conj(rho)),12)}. Every FREE row still holds; the Li row fails at n = ${fn}. That difference — which rows can fail — is what “bearing” means.`:'';
+}
+function panelInt(n){
+  const f=RH.factor(n), prime=(f.length===1&&f[0][1]===1), pp=(f.length===1), Lam=pp?Math.log(f[0][0]):0, sg=RH.sigmaOf(f), sp=RH.sopfrOf(f), Om=RH.OmegaOf(f), mu=RH.muOf(f);
+  drow('factorization', f.map(([p,e])=>e>1?`${p}<sup>${e}</sup>`:`${p}`).join(' · ')+(prime?' &nbsp;— prime':pp?' &nbsp;— prime power':' &nbsp;— composite'), `Ω(n) = ${Om}, μ(n) = ${mu}, λ(n) = (−1)<sup>Ω</sup> = ${Om%2?-1:1}, σ(n) = ${sg}`);
+  drow('von Mangoldt weight Λ(n)', pp?`ln ${f[0][0]} = ${fmt(Lam,8)}`:'0', 'the weight every prime power carries into the explicit formula and into Paper 14’s PRIME(m); Λ(2p) = 0 — the zero side is silent at 2p');
+  if(pp){ const d=AM.delta; const hits=RH.tentHits(n,d,300); drow('its place in Paper 14’s A(m)', `Λ(n)/√n = ${fmt(Lam/Math.sqrt(n),6)}; ln n = ${fmt(Math.log(n),6)} → tent hits ${hits.map(([m,w])=>`m=${m} (w=${w.toFixed(3)})`).join(', ')}`, 'the prime enters the Toeplitz sequence exactly when the window reaches ln n — see the windows panel'); }
+  drow('sopfr dial', `sopfr(n) = ${sp} &nbsp; angle atan(sopfr/n) = ${fmt(deg(Math.atan2(sp,n)),6)}°`, `sopfr(n) = n ⟺ n prime or n = 4 [T, folklore; OEIS A001414 territory] — primes sit on the 45° line`);
+  if(prime){ const p=n, g=RH.gaussian(p), e=RH.eisenstein(p);
+    drow('Gaussian world ℤ[i]', g.kind + (g.a!==undefined?`: ${p} = ${g.a}² + ${g.b}²; angle ${fmt(g.deg,6)}° (folded to [0°,45°]); cos 4θ = Re(π⁴)/p² = ${fmt(g.cos4,8)}`:''), 'p ≡ 1 mod 4 splits, p ≡ 3 mod 4 stays inert, 2 ramifies; the split angles equidistribute (Hecke 1918/1920) — the Grossencharacter tower ξₖ spins them by 4kθ');
+    drow('Eisenstein world ℤ[ω]', e.kind + (e.a!==undefined?`: ${p} = ${e.a}² − ${e.a}·${e.b} + ${e.b}²; angle ${fmt(e.deg,6)}° (folded to [0°,30°]); cos 6θ = Re(π⁶)/p³ = ${fmt(e.cos6,8)}`:''), '3 is the ramified prime of this world as 2 is of ℤ[i]; the reciprocal circle |w−1| = 1 is the same in both');
+    const t=ZEROS[0]; const term=cscale(cpowr(p,C(-0.5,-t)),Lam-1);
+    drow('Euler factor and compensated term', `(1 − p<sup>−2</sup>)<sup>−1</sup> = ${fmt(1/(1-1/(p*p)),10)}; &nbsp; (Λ(p) − 1) p<sup>−½−iγ₁</sup> = ${fc(term,5)}`, 'Room VIII: Σ(Λ(n) − 1) n^{−s} converges on Re s > ½ ⟺ RH; the product converges exactly where there are no zeros');
+  }
+  if(n<=RH.SIEVE_CAP){ const c=RH.cumulativeAt(n), sx=Math.sqrt(n), l=RH.li(n);
+    drow(`counting at x = ${n}`, `π = ${c.pi}, li = ${fmt(l,8)}, π − li = ${fmt(c.pi-l,5)}; &nbsp; θ = ${fmt(c.theta,9)}, ψ = ${fmt(c.psi,9)}, ψ − x = ${fmt(c.psi-n,5)}`, `(ψ − x)/√x = ${fmt((c.psi-n)/sx,5)}; von Koch scale √x ln x = ${fmt(sx*Math.log(n),6)}; Mertens M = ${c.M}, Pólya L = ${c.L}, mod-4 race (inert − split) = ${c.race}`);
+    brow('EQUIVALENT','von Koch: |ψ(x) − x| = O(√x ln²x)', `|ψ − x|/(√x ln²x) = ${fmt(Math.abs(c.psi-n)/(sx*Math.log(n)**2),5)}`, 'von Koch 1901 (⇒), the Mellin argument (⇐): the exponent Θ = sup Re ρ; RH ⟺ Θ = ½');
+    brow('DISPROVEN','Mertens |M(x)| < √x', `|M|/√x = ${fmt(Math.abs(c.M)/sx,5)}`, 'the strong form is false (Odlyzko–te Riele 1985: limsup > 1.06); RH ⟺ M(x) = O(x^{½+ε}) survives (Littlewood 1912)');
+    brow('DISPROVEN','Pólya L(x) ≤ 0', `L(${n}) = ${c.L}`, 'false (Haselgrove 1958; first failure at 906,150,257 — beyond the 2·10⁶ sieve cap)');
+    brow('MEASURED','Chebyshev bias, inert − split', `${c.race}`, 'Rubinstein–Sarnak 1994 (from memory): logarithmic density 0.9959 for the lead — a pure χ₄-zero sum plus the √x inert-squares bias; not an RH criterion');
+  } else drow('counting', '—', `sieve cap is ${RH.SIEVE_CAP.toLocaleString()}; factorization still exact (trial division)`);
+  if(n<=2e6){ const lg=RH.lagariasIneq(n,f); brow('EQUIVALENT','Lagarias: σ(n) ≤ Hₙ + e^{Hₙ} ln Hₙ', `σ = ${sg}; right side ${fmt(lg.rhs,8)}; margin ${sgn(lg.margin)}`, 'Lagarias 2002, Amer. Math. Monthly 109 — an elementary statement equivalent to RH'); }
+  if(n>5040) brow('EQUIVALENT','Robin: σ(n) < e^{γ} n ln ln n (n > 5040)', `margin ${sgn(RH.robinMargin(n,f))}`, 'Robin 1984 (citation from memory) — RH ⟺ this for all n > 5040; 5040 is the last exception');
+  brow('MEASURED','prime-fixed-point criterion', prime||n===4?'<span class="pos">sopfr(n) = n</span>':`sopfr(n) = ${sp} ≠ n`, 'a theorem about factorization, not about zeros — the 45° line of the sopfr seam plot');
+  renderHankel(null,''); drawDial(null); $('banner').className='banner';
+}
+function panelX(x){
+  const s=parseComplex($('cs').value)||C(0.75);
+  if(x<=RH.SIEVE_CAP){ const c=RH.cumulativeAt(x), sx=Math.sqrt(x), l=RH.li(x), pe=RH.psiExplicit(x+0.5);
+    drow(`primes to ${x}`, `π(x) = ${c.pi}; li(x) = ${fmt(l,9)}; π − li = ${fmt(c.pi-l,6)}`, `x/ln x = ${fmt(x/Math.log(x),8)}; RH ⟺ |π(x) − li(x)| < √x ln x / 8π for x ≥ 2657 (Schoenfeld 1976, from memory): bound ${fmt(sx*Math.log(x)/(8*Math.PI),6)}`);
+    drow('Chebyshev functions', `θ(x) = ${fmt(c.theta,10)}; ψ(x) = ${fmt(c.psi,10)}; ψ − x = ${fmt(c.psi-x,6)}`, `(ψ − x)/√x = ${fmt((c.psi-x)/sx,5)}`);
+    drow(`explicit formula with 10,000 zeros at x + ½`, `ψ₁₀ₖ(x+½) = ${fmt(pe,10)} &nbsp; vs ψ(x) = ${fmt(c.psi,10)}`, `residual ${fmt(pe-c.psi,4)} — the truncation beyond γ₁₀₀₀₀; the zero sum cancels the main term x across every prime gap`);
+    drow('Möbius and Liouville', `M(x) = ${c.M}; &nbsp; M/√x = ${fmt(c.M/sx,5)}; &nbsp; L(x) = ${c.L}`, 'the reciprocal side: 1/ζ has the same zeros as poles; RH ⟺ M(x) = O(x^{½+ε})');
+    drow('mod-4 race', `inert − split = ${c.race}`, 'first χ₄-zero period in ln x: 2π/6.0209 = 1.0436 (a factor 2.84 in x)');
+    const S=RH.buildSieve(); let acc=C(0); const xs=Math.floor(x); for(let n=1;n<=xs;n++){ const lam=S.pp[n]?Math.log(S.spf[n]):0; acc=cadd(acc, cscale(cpowr(n,cscale(s,-1)), lam-1)); }
+    drow(`Room VIII partial sum Σ_{n≤x}(Λ(n) − 1) n^{−s}, s = ${fc(s,4)}`, fc(acc,8), 'abscissa of convergence = Θ = sup Re ρ (Ingham Thm 30 + Dirichlet-series analyticity), so RH ⟺ convergence on Re s > ½');
+    brow('EQUIVALENT','von Koch: |ψ(x) − x| = O(√x ln²x)', `ratio ${fmt(Math.abs(c.psi-x)/(sx*Math.log(x)**2),5)}`, 'RH ⟺ Θ = ½; nobody has proven Θ < 1 — no zero-free vertical strip is known');
+    brow('EQUIVALENT','π(x) − li(x) = O(√x ln x)', `|π − li|/(√x ln x) = ${fmt(Math.abs(c.pi-l)/(sx*Math.log(x)),5)}`, 'von Koch 1901; π − li is negative here and first turns positive near 10^{316} (Skewes region; Bays–Hudson 2000, from memory)');
+    brow('EQUIVALENT','Σ(Λ(n) − 1) n^{−s} converges for Re s > ½', `partial sum at s = ${fc(s,3)}: |S| = ${fmt(cabs(acc),6)}`, 'Room VIII’s theorem card — the Euler product carried into the strip with a pole compensator');
+    brow('DISPROVEN','Mertens |M(x)| < √x', `|M|/√x = ${fmt(Math.abs(c.M)/sx,5)}`, 'Odlyzko–te Riele 1985');
+    brow('DISPROVEN','Pólya L(x) ≤ 0', `L(x) = ${c.L}`, 'Haselgrove 1958');
+  } else { drow('height beyond the sieve cap', `x = ${x}`, `sieve cap ${RH.SIEVE_CAP.toLocaleString()}; li(x) = ${fmt(RH.li(x),10)}, √x ln x = ${fmt(Math.sqrt(x)*Math.log(x),8)}`); }
+  drow('read as a height T', `N(T) main term = ${fmt(RH.NMain(x),9)}` + (x<=T?`; exact count of tabulated zeros ≤ T: ${RH.countZerosLE(x)}; S(T) = ${fmt(RH.countZerosLE(x)-RH.NMain(x),5)}`:''), 'Riemann–von Mangoldt: N(T) = (T/2π) ln(T/2πe) + 7/8 + S(T); RH tightens S(T) from O(ln T) to O(ln T / ln ln T) (Littlewood 1924)');
+  renderHankel(null,''); drawDial(null); $('banner').className='banner';
+}
+function panelS(s){
+  const z=RH.zetaEM(s), X=RH.xi(s), w=cinv(s), onLine=Math.abs(s.re-0.5)<1e-12, L=RH.lagariasSum(s);
+  drow('ζ(s)', `${fc(z,10)} &nbsp; |ζ| = ${fmt(cabs(z),8)} &nbsp; arg = ${fmt(deg(carg(z)),6)}°`, 'Euler–Maclaurin, 12 Bernoulli terms, N = ⌊|t|⌋ + 20; verified against mpmath to 2e-13 in the twin');
+  drow('ξ(s) = ½ s(s−1) π^{−s/2} Γ(s/2) ζ(s)', `${fc(X,10)} &nbsp; |ξ| = ${fmt(cabs(X),8)}`, `ξ(½) = ${fmt(REF.xi_half,12)}; ξ is even about ½: ξ(s) = ξ(1−s)`);
+  if(onLine){ const th=RH.rsTheta(s.im), Zt=cmul(cexp(C(0,th)),z); drow('Riemann–Siegel on the line', `θ(t) = ${fmt(th,10)} &nbsp; Z(t) = e^{iθ} ζ(½+it) = ${fmt(Zt.re,10)} (Im ${fmt(Zt.im,2)})`, 'Z is real on the line; its sign changes are the zeros (Hardy); Turing’s method counts them'); }
+  drow('reciprocal w = 1/s', `w = ${fc(w,8)}; &nbsp; |w−1|² − 1 = (1−2σ)/|s|² = ${fmt((1-2*s.re)/(s.re*s.re+s.im*s.im),6)}`, 'the critical line is the circle |w − 1| = 1 through 0 (∞) and 2 (½); trace(w) = norm(w) exactly there');
+  drow('mirror orbit', `{s, <span class="ov">s</span>, 1−s, 1−<span class="ov">s</span>}: ${fc(s,5)}, ${fc(conj(s),5)}, ${fc(csub(C(1),s),5)}, ${fc(csub(C(1),conj(s)),5)}`, 'ξ takes the same value on all four');
+  drow('ξ′/ξ(s) = Σ_ρ 1/(s−ρ) over 10,000 zeros + tail', `${fc(L,8)} &nbsp; angle ${fmt(deg(carg(L)),5)}°`, `at s = 0.75 + 50i the 100,000-zero value is ${fmt(REF.lagarias_sum_0p75_50_100k[0],7)} ${REF.lagarias_sum_0p75_50_100k[1]<0?'−':'+'} ${fmt(Math.abs(REF.lagarias_sum_0p75_50_100k[1]),7)}i (angle −31.81°)`);
+  const S=RH.buildSieve(); const cuts=[10,100,1000,10000,100000,1000000]; let acc=C(0), ci=0; const mods=[];
+  for(let n=2;n<=1000000;n++){ if(S.spf[n]===n){ acc=csub(acc, RH.clog(csub(C(1), cpowr(n, cscale(s,-1))))); } if(n===cuts[ci]){ mods.push(`P=${cuts[ci]}: ${fmt(cabs(cexp(acc)),5)}`); ci++; } }
+  drow('finite Euler products ∏_{p≤P}(1 − p^{−s})^{−1}', mods.join('; '), s.re>1?'converges absolutely here — and is nonzero: the product’s one job is proving there are no zeros where it converges':'inside the strip the finite products neither converge nor stay away from 0 — the function exists there only by analytic continuation');
+  brow('RH','ζ(s) ≠ 0 for Re s ≠ ½', onLine?`on the line: |ζ| = ${fmt(cabs(z),6)} — zeros are allowed here`:(cabs(z)<1e-8?`<span class="neg">|ζ| = ${fmt(cabs(z),3)} off the line — recheck the arithmetic; the traitor preset shows what a genuine off-line zero of a different function looks like</span>`:`<span class="pos">|ζ(s)| = ${fmt(cabs(z),6)} ≠ 0</span>`), 'the hypothesis itself, evaluated at one point');
+  brow('EQUIVALENT','Lagarias: Re ξ′/ξ(s) > 0 for Re s > ½', s.re>0.5?sgn(L.re)+` (angle ${fmt(deg(carg(L)),4)}°, within ±90°)`:'not applicable at Re s ≤ ½', 'Lagarias 1999 (from memory) — every component within ±90° when all zeros are on the line; truncated to 10,000 zeros + tail here');
+  brow('EQUIVALENT','reciprocal circle', `|1/s − 1|² − 1 = ${fmt((1-2*s.re)/(s.re*s.re+s.im*s.im),6)}`, 'zero iff Re s = ½');
+  brow('MEASURED','Euler product behaviour at s', s.re>1?'convergent, nonzero':(s.re>0.5?'conditionally convergent iff no zeros to the right — this is RH in product form':'divergent'), 'finite products at ρ₁ swing 0.013–0.417 for P = 10…10⁶ while ζ(ρ₁) = 0 (receipt euler_product_check.py)');
+  renderHankel(null,''); drawDial({points:[{z:csub(C(1),cinv(s)),color:'#6fb3e0',main:true,label:'z(s)'}], theta:carg(csub(C(1),cinv(s))), defect:cabs(csub(C(1),cinv(s)))**2-1, caption:`The point s mapped by z = 1 − 1/s. The rim is the critical line; inside is Re s > ½, outside Re s < ½.`}); $('banner').className='banner';
+}
+function curveLabel(a,b){ const ax=a===0?'':(a===1?' + x':a===-1?' − x':(a<0?` − ${-a}x`:` + ${a}x`)); const bx=b===0?'':(b<0?` − ${-b}`:` + ${b}`); return `y² = x³${ax}${bx}`; }
+function panelCurve(p,a,b){
+  if(!RH.isPrime(p)||p<5||p>200003){ drow('curve', '—', 'need a prime 5 ≤ p ≤ 200,003'); renderHankel(null,''); drawDial(null); $('banner').className='banner'; return; }
+  const h=RH.hasse(p,a,b);
+  if(h.singular){ drow('curve', `${curveLabel(a,b)} over F<sub>${p}</sub>`, 'singular: 4a³ + 27b² ≡ 0 mod p — choose other coefficients'); renderHankel(null,''); drawDial(null); $('banner').className='banner'; return; }
+  drow('curve', `E: ${curveLabel(a,b)} over F<sub>${p}</sub>`, `#E(F<sub>p</sub>) = ${h.pts} (including the point at infinity); a<sub>p</sub> = p + 1 − #E = ${h.ap}`);
+  drow('Hasse bound', `|a<sub>p</sub>| = ${Math.abs(h.ap)} ≤ 2√p = ${fmt(2*Math.sqrt(p),8)}`, h.ok?'holds — Hasse 1933':'VIOLATED — impossible; check the arithmetic');
+  drow('local zeta numerator 1 − a<sub>p</sub>T + pT²', `roots T = 1/α, 1/<span class="ov">α</span> with α = ${fc(h.alpha,8)}`, `|α| = ${fmt(cabs(h.alpha),10)} = √p = ${fmt(Math.sqrt(p),10)} — so the zeros of ζ<sub>E</sub>(s) have Re s = ½ exactly (α = p<sup>s</sup>)`);
+  drow('the critical line here', `a circle: |T| = p<sup>−½</sup> = ${fmt(1/Math.sqrt(p),8)}; period 2π/ln p = ${fmt(TWO_PI/Math.log(p),6)} in t`, 'finitely many zeros per period; the “mod” world where the wrap arrives');
+  brow('PROVEN','RH for E/F<sub>p</sub>: |α| = √p', `|α|/√p = ${fmt(h.absAlphaOverSqrtP,12)}`, 'Hasse 1933 (elliptic curves), Weil 1948 (curves), Deligne 1974 (varieties) — proven, and this row computes the proof’s content live');
+  brow('EQUIVALENT','Re s = ½ for all zeros of ζ<sub>E</sub>', '<span class="pos">holds — theorem</span>', 'the same sentence as for ζ(s); here the door is open because Spec F<sub>p</sub>[t] has a base field to stand on — Spec ℤ does not (the F₁ question)');
+  brow('MEASURED','point count vs p + 1', `${h.pts} − (p + 1) = ${h.pts-p-1}`, 'Sato–Tate: a<sub>p</sub>/2√p is semicircle-distributed over p (Barnet-Lamb–Geraghty–Harris–Taylor 2011, from memory)');
+  renderHankel(null,''); drawDial(null); $('banner').className='banner';
+}
+
+// ------------------------------------------------------------------ earned sentences
+function renderEarned(){
+  const lam=[1,2,3,4,5].map(RH.liLambda); const hr=RH.hankelReport(RH.hankelQ(13),7);
+  const lg=RH.lagariasIneq(5040,RH.factor(5040)); const h=RH.hasse(1009,1,1);
+  const mus=['2.5','5.0','7.5'].map(W=>AM.mu[W]!==undefined?fmt(AM.mu[W],4):'…');
+  $('earned').innerHTML=[
+    `RH <b>is equivalent to</b> λₙ ≥ 0 for every n ≥ 1 — a <b>proven</b> theorem (Li 1997; Bombieri–Lagarias 1999). This page computes λ₁…λ₅ from the first 10,000 zeros: <span class="val">${lam.map(v=>fmt(v,8)).join(', ')}</span>. The theorem carries the ⟺; the “every” is the door.`,
+    `RH <b>is equivalent to</b> H<sub>k</sub> positive semidefinite for every k — <b>proven</b> by pole matching (Two Spectral Fingerprints, Theorem 4.1; the same criterion appears in Pascoe 2020 and Bickel–Pascoe–Sargent 2021–23). Live from the 10,000 zeros, λ<sub>min</sub>(H<sub>k</sub>) for k = 1…7: <span class="val">${hr.map(r=>fmt(r.lamMin,4)).join(', ')}</span>, each within its certification floor of the exact Newton-route value; positive through k = 50 at 470 digits and k = 96 in certified arithmetic.`,
+    `RH <b>is equivalent to</b> positive-definiteness of the one sequence A(m) = POLE(m) − PRIME(m) + ARCH(m) at every window and every δ — <b>proven</b> (Weil's criterion in box coordinates; Paper 14, Prop. 1). Live at δ = 0.05, μ<sub>min</sub> at windows 2.5, 5, 7.5: <span class="val">${mus.join(', ')}</span>; Paper 14 certifies window 15 unconditionally and, given the verified height 3·10¹², beyond the reach of any possible off-line zero by a factor ≈ 2·10¹².`,
+    `RH <b>is equivalent to</b> σ(n) ≤ Hₙ + e^{Hₙ} ln Hₙ for every n ≥ 1 — <b>proven</b> (Lagarias 2002). At n = 5040 the margin is <span class="val">${fmt(lg.margin,6)}</span>.`,
+    `RH <b>is proven</b> for curves over finite fields (Hasse 1933; Weil 1948; Deligne 1974). For y² = x³ + x + 1 over F₁₀₀₉: a<sub>p</sub> = <span class="val">${h.ap}</span>, |α|/√p = <span class="val">${fmt(h.absAlphaOverSqrtP,10)}</span>.`,
+    `RH <b>is verified</b> for every zero anyone has ever found: all zeros to height 3·10¹² have Re ρ = ½ (Platt–Trudgian 2021) — a finite, checked statement, not the theorem. Every equivalence above is a proof of a bridge; none is a proof of the far bank.`
+  ].map(t=>`<li>${t}</li>`).join('');
+}
+
+// ------------------------------------------------------------------ self-check
+function runSelfCheck(){
+  const r=RH.selfCheck(REF); const el=$('selfcheck');
+  el.textContent=`self-check ${r.pass}/${r.total} against the Python twin${r.pass===r.total?' — all match':' — MISMATCH'}`; el.className=r.pass===r.total?'ok':'bad';
+  $('scdetail').textContent=r.items.map(i=>`${i.pass?'✓':'✗'} ${i.name}: page ${JSON.stringify(i.got)}  twin ${JSON.stringify(i.want)}`).join('\n');
+  window.__selfcheck={pass:r.pass,total:r.total};
+}
+
+// ------------------------------------------------------------------ dispatcher
+let MODE='auto';
+function detect(q){ q=q.trim(); if(q.startsWith('#')) return 'zero'; if(/i\s*$/.test(q)) return 's'; if(/p\s*=|,/.test(q)) return 'curve'; if(/^\d+$/.test(q)) return 'int'; const v=parseFloat(q); if(!Number.isNaN(v)){ if(ZEROS.some(g=>Math.abs(g-v)<0.05)) return 'zero'; return 'x'; } return 'x'; }
+function compute(){
+  const q=$('q').value.trim(); let mode=MODE==='auto'?detect(q):MODE; let traitor=false;
+  if(MODE==='traitor'){ mode='zero'; traitor=true; }
+  try{
+    if(mode==='zero'){ let gamma, idx=null, beta=parseFloat($('beta').value); if(Number.isNaN(beta)) beta=0.5;
+      if(traitor){ gamma=DH.gamma; beta=DH.beta; $('beta').value=String(DH.beta); }
+      else if(q.startsWith('#')){ idx=parseInt(q.slice(1),10); if(!(idx>=1&&idx<=ZEROS.length)) throw new Error(`index must be 1…${ZEROS.length}`); gamma=ZEROS[idx-1]; }
+      else { gamma=parseFloat(q); if(!(gamma>0)) throw new Error('need a positive ordinate or #n'); const j=ZEROS.findIndex(g=>Math.abs(g-gamma)<0.01); if(j>=0){ idx=j+1; gamma=ZEROS[j]; } }
+      panelZero(gamma,beta,idx,traitor); }
+    else if(mode==='int'){ const n=Number(q.replace(/[\s,]/g,'')); if(!Number.isInteger(n)||n<2||n>1e12) throw new Error('integer n with 2 ≤ n ≤ 10¹²'); panelInt(n); }
+    else if(mode==='x'){ const x=parseFloat(q.replace(/[\s,]/g,'')); if(!(x>=2)) throw new Error('height x ≥ 2'); panelX(x); }
+    else if(mode==='s'){ const s=parseComplex(q); if(!s) throw new Error('point like 0.75+50i'); panelS(s); }
+    else if(mode==='curve'){ const m={}; for(const [,k,v] of q.matchAll(/([pab])\s*=\s*(-?\d+)/g)) m[k]=parseInt(v,10); let p=m.p,a=m.a,b=m.b; if(p===undefined){ const parts=q.split(/[\s,]+/).map(Number); [p,a,b]=parts; } if(a===undefined)a=1; if(b===undefined)b=1; panelCurve(p,a,b); }
+  }catch(e){ D=[]; B=[]; drow('input', esc(q), esc(e.message)); renderHankel(null,''); drawDial(null); $('banner').className='banner'; }
+  flush();
+}
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{ document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); MODE=c.dataset.m; compute(); }));
+document.querySelectorAll('.preset').forEach(p=>p.addEventListener('click',()=>{ $('q').value=p.dataset.q; MODE=p.dataset.m; document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on', x.dataset.m===(MODE==='traitor'?'zero':MODE))); $('beta').value=p.dataset.beta||'0.5'; compute(); }));
+$('eq').addEventListener('click',()=>{ if(MODE==='traitor') MODE='zero'; compute(); });
+$('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ if(MODE==='traitor') MODE='zero'; compute(); } });
+['beta','wa','wx','ls','cs'].forEach(id=>$(id).addEventListener('change',compute));
+$('selfcheck').addEventListener('click',()=>{ const d=$('scdetail'); d.style.display=d.style.display==='block'?'none':'block'; });
+compute();
+setTimeout(()=>{ ensureA(); for(const W of [2.5,5.0,7.5,10.0,12.5,15.0]){ muWindow(W); AM.mu[W.toFixed(1)]=AM.mu[W]; AM.mu[W.toFixed(1)+'_ms']=AM.mu[W+'_ms']; } renderAm(); renderEarned(); setTimeout(()=>{ try{ runSelfCheck(); }catch(e){ $('selfcheck').textContent='self-check failed to run: '+e.message; $('selfcheck').className='bad'; } }, 30); }, 30);
+</script>
+</body>
+</html>
